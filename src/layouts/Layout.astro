@@ -1,0 +1,41 @@
+---
+import '@fontsource-variable/outfit';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+  </head>
+  <body class="bg-gray-50">
+    <slot />
+    <footer class="bg-dark text-white py-8 mt-20">
+      <div class="container mx-auto px-4 text-center">
+        <p>&copy; {new Date().getFullYear()} Kamas Snacks. Tous droits réservés.</p>
+        <div class="mt-4 space-x-4">
+          <a href="#" class="hover:text-primary">Politique de Confidentialité</a>
+          <a href="#" class="hover:text-primary">Conditions d'Utilisation</a>
+          <a href="#contact" class="hover:text-primary">Contact</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

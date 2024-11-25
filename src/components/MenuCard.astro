@@ -1,0 +1,39 @@
+---
+interface Props {
+  title: string;
+  price: string;
+  description: string;
+  image: string;
+}
+
+const { title, price, description, image } = Astro.props;
+---
+
+<div class="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105">
+  <img src={image} alt={title} class="w-full h-48 object-cover" />
+  <div class="p-4">
+    <div class="flex justify-between items-center mb-2">
+      <h3 class="text-xl font-semibold text-dark">{title}</h3>
+      <span class="text-dark font-bold">{price}</span>
+    </div>
+    <p class="text-gray-600">{description}</p>
+    <div class="mt-4 flex gap-2">
+      <a
+        href="https://wa.me/+33123456789"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex-1 bg-[#25D366] text-white py-2 px-4 rounded text-center hover:bg-opacity-90 transition-colors"
+      >
+        WhatsApp
+      </a>
+      <a
+        href="https://glovoapp.com/kamas-snacks"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex-1 bg-[#FFC244] text-dark py-2 px-4 rounded text-center hover:bg-opacity-90 transition-colors"
+      >
+        Glovo
+      </a>
+    </div>
+  </div>
+</div>
