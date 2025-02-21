@@ -1,24 +1,28 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
-import './styles/reset.css';
-import './index.css';
 import './i18n';
+import './index.css';
 
-const container = document.getElementById('root');
-if (!container) {
+// Wait for i18n to be initialized before rendering
+const rootElement = document.getElementById('root');
+if (!rootElement) {
   throw new Error('Root element not found');
 }
 
-const root = createRoot(container);
+const root = ReactDOM.createRoot(rootElement);
 
+// Render with Strict Mode
 root.render(
-  <StrictMode>
-    <RouterProvider router={router} fallbackElement={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="spinner" />
-      </div>
-    } />
-  </StrictMode>
+  <React.StrictMode>
+    <RouterProvider 
+      router={router} 
+      fallbackElement={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="spinner" />
+        </div>
+      } 
+    />
+  </React.StrictMode>
 );

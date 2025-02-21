@@ -9,14 +9,12 @@ interface PageLayoutProps {
 const PageLayout: React.FC<PageLayoutProps> = ({ children, className = '' }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className={`max-w-7xl mx-auto p-6 ${className}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className={`container mx-auto px-4 py-8 ${className}`}
     >
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-        {children}
-      </div>
+      {children}
     </motion.div>
   );
 };

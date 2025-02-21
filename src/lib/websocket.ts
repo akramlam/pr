@@ -1,119 +1,139 @@
-// Custom EventEmitter implementation
-class EventEmitter {
-  private events: { [key: string]: Function[] } = {};
+import { io, Socket } from 'socket.io-client';
+import { EventEmitter } from './EventEmitter';
+import type { GameSession, GamePlayer } from '../types';
 
-  on(event: string, callback: Function) {
-    if (!this.events[event]) {
-      this.events[event] = [];
-    }
-    this.events[event].push(callback);
-    return this;
-  }
-
-  emit(event: string, ...args: any[]) {
-    if (!this.events[event]) return;
-    this.events[event].forEach(callback => callback(...args));
-    return this;
-  }
-
-  removeListener(event: string, callback: Function) {
-    if (!this.events[event]) return;
-    this.events[event] = this.events[event].filter(cb => cb !== callback);
-    return this;
-  }
+interface ServerToClientEvents {
+  connect: () => void;
+  disconnect: (reason: string) => void;
+  CONNECTED: (data: { playerId: string }) => void;
+  HOST_GAME_SUCCESS: (data: { sessionId: string; session: GameSession }) => void;
+  JOIN_GAME_SUCCESS: (data: { sessionId: string; session: GameSession }) => void;
+  PLAYER_JOINED: (data: { player: GamePlayer; session: GameSession }) => void;
+  PLAYER_LEFT: (data: { playerId: string; session: GameSession }) => void;
+  GAME_STARTED: (data: { session: GameSession }) => void;
+  QUESTION_STARTED: (data: { question: any; timeLimit: number }) => void;
+  ANSWER_RESULT: (data: { correct: boolean; score: number }) => void;
+  GAME_OVER: (data: { session: GameSession; winners: string[] }) => void;
+  ERROR: (data: { message: string }) => void;
 }
 
-interface WebSocketMessage {
-  type: string;
-  [key: string]: any;
+interface ClientToServerEvents {
+  HOST_GAME: () => void;
+  JOIN_GAME: (data: { sessionId: string; player: Partial<GamePlayer> }) => void;
+  LEAVE_GAME: () => void;
+  START_GAME: () => void;
+  SUBMIT_ANSWER: (data: { answer: number }) => void;
 }
 
-class WebSocketClient extends EventEmitter {
-  private ws: WebSocket | null = null;
+export class WebSocketService extends EventEmitter {
+  private socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
   private url: string;
-  private callbacks: Map<string, Function[]> = new Map();
+  private _isCleanDisconnect = false;
+  private reconnectAttempts = 0;
+  private readonly maxReconnectAttempts = 5;
 
   constructor(url: string) {
     super();
+    console.log('WebSocketService created with URL:', url);
     this.url = url;
-    console.log('WebSocket client created for:', url);
   }
 
-  connect() {
-    console.log('Attempting connection to:', this.url);
-    
+  get isCleanDisconnect(): boolean {
+    return this._isCleanDisconnect;
+  }
+
+  isConnected(): boolean {
+    return this.socket?.connected ?? false;
+  }
+
+  async connect(): Promise<void> {
+    if (this.isConnected()) {
+      console.log('Socket already connected');
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('Creating Socket.io connection...');
+        
+        this.socket = io(this.url, {
+          transports: ['websocket'],
+          reconnection: true,
+          reconnectionAttempts: this.maxReconnectAttempts,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000,
+          timeout: 20000,
+        });
+
+        this.socket.on('connect', () => {
+          console.log('Socket.io connected successfully');
+          this.reconnectAttempts = 0;
+          this.emit('connected', null);
+          resolve();
+        });
+
+        this.socket.on('connect_error', (error: Error) => {
+          console.error('Socket.io connection error:', error);
+          this.emit('error', error);
+          reject(error);
+        });
+
+        this.socket.on('disconnect', (reason: string) => {
+          console.log('Socket.io disconnected:', reason);
+          this._isCleanDisconnect = reason === 'io client disconnect';
+          this.emit('disconnected', reason);
+        });
+
+        // Handle game-specific events
+        this.socket.on('CONNECTED', (data) => this.emit('CONNECTED', data));
+        this.socket.on('HOST_GAME_SUCCESS', (data) => this.emit('HOST_GAME_SUCCESS', data));
+        this.socket.on('JOIN_GAME_SUCCESS', (data) => this.emit('JOIN_GAME_SUCCESS', data));
+        this.socket.on('PLAYER_JOINED', (data) => this.emit('PLAYER_JOINED', data));
+        this.socket.on('PLAYER_LEFT', (data) => this.emit('PLAYER_LEFT', data));
+        this.socket.on('GAME_STARTED', (data) => this.emit('GAME_STARTED', data));
+        this.socket.on('QUESTION_STARTED', (data) => this.emit('QUESTION_STARTED', data));
+        this.socket.on('ANSWER_RESULT', (data) => this.emit('ANSWER_RESULT', data));
+        this.socket.on('GAME_OVER', (data) => this.emit('GAME_OVER', data));
+        this.socket.on('ERROR', (data) => this.emit('ERROR', data));
+
+      } catch (error) {
+        console.error('Failed to create Socket.io connection:', error);
+        reject(error);
+      }
+    });
+  }
+
+  send<T extends keyof ClientToServerEvents>(
+    type: T,
+    ...args: Parameters<ClientToServerEvents[T]>
+  ) {
+    if (!this.socket?.connected) {
+      console.error('Cannot send message: Socket not connected');
+      return;
+    }
+
     try {
-      this.ws = new WebSocket(this.url);
-
-      this.ws.onopen = () => {
-        console.log('WebSocket connection established');
-        this.emit('connected');
-      };
-
-      this.ws.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
-        this.emit('disconnected');
-      };
-
-      this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        this.emit('error', error);
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          console.log('Received message:', message);
-          
-          this.emit('message', message);
-          
-          if (message.type) {
-            this.emit(message.type, message);
-          }
-        } catch (error) {
-          console.error('Error parsing message:', error);
-        }
-      };
+      console.log('Sending Socket.io message:', { type, args });
+      this.socket.emit(type, ...args);
     } catch (error) {
-      console.error('Error creating WebSocket:', error);
-    }
-  }
-
-  on(event: string, callback: Function) {
-    if (!this.callbacks.has(event)) {
-      this.callbacks.set(event, []);
-    }
-    this.callbacks.get(event)?.push(callback);
-  }
-
-  emit(event: string, data?: any) {
-    console.log('Emitting event:', event, data);
-    const callbacks = this.callbacks.get(event);
-    if (callbacks) {
-      callbacks.forEach(callback => callback(data));
-    }
-  }
-
-  send(message: any) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('Sending message:', message);
-      this.ws.send(JSON.stringify(message));
-    } else {
-      console.error('WebSocket is not connected. State:', this.ws?.readyState);
+      console.error('Error sending Socket.io message:', error);
     }
   }
 
   disconnect() {
-    if (this.ws) {
-      console.log('Disconnecting WebSocket');
-      this.ws.close();
-      this.ws = null;
+    console.log('Disconnecting Socket.io');
+    this._isCleanDisconnect = true;
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
     }
   }
 }
 
-export const createWebSocketClient = (path: string = '') => {
-  const wsUrl = `ws://localhost:3001${path}`;
-  console.log('Creating WebSocket client with URL:', wsUrl);
-  return new WebSocketClient(wsUrl);
+export const createWebSocketService = (sessionId: string | null) => {
+  const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
+  const host = window.location.hostname;
+  const port = '3001';
+  const baseUrl = `${protocol}://${host}:${port}`;
+  return new WebSocketService(baseUrl);
 }; 

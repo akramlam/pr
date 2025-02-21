@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import type { GameSession, GamePlayer, Question, Difficulty } from '../types';
 import { QUESTIONS_BY_DIFFICULTY } from '../data/questions';
+import { renderMatches } from 'react-router-dom';
 
 interface ChatMessage {
   id: string;
@@ -26,8 +27,8 @@ export class GameStateManager extends EventEmitter {
       currentQuestion: 0,
       questionCount: 5,
       timeLimit: 30,
-      startTime: null,
-      endTime: null
+      startTime: undefined,
+      endTime: undefined
     };
 
     this.sessions.set(sessionId, session);
@@ -105,7 +106,7 @@ export class GameStateManager extends EventEmitter {
     if (!session || session.status !== 'active') return;
 
     const player = session.players.find(p => p.id === playerId);
-    if (!player) return;
+    if (!player) return;  
 
     const question = session.questions[session.currentQuestion];
     const isCorrect = answerIndex === question.correctAnswer;

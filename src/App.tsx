@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { Outlet } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Toast from './components/Toast';

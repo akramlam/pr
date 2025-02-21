@@ -1,8 +1,8 @@
-import type { Question, Difficulty } from '../types';
+import type { Question, Difficulty, Category } from '../types';
 
 export const QUESTIONS_BY_DIFFICULTY: Record<Difficulty, Question[]> = {
   easy: [
-    // Math
+    // === MATH - EASY ===
     {
       id: 'e1',
       text: 'What is 2 + 2?',
@@ -23,7 +23,7 @@ export const QUESTIONS_BY_DIFFICULTY: Record<Difficulty, Question[]> = {
       timeLimit: 30,
       points: 100
     },
-    // Science
+    // === SCIENCE - EASY ===
     {
       id: 'e3',
       text: 'Which planet is known as the Red Planet?',
@@ -44,7 +44,7 @@ export const QUESTIONS_BY_DIFFICULTY: Record<Difficulty, Question[]> = {
       timeLimit: 30,
       points: 100
     },
-    // Geography
+    // === GEOGRAPHY - EASY ===
     {
       id: 'e5',
       text: 'What is the capital of France?',
@@ -67,7 +67,7 @@ export const QUESTIONS_BY_DIFFICULTY: Record<Difficulty, Question[]> = {
     }
   ],
   medium: [
-    // Math
+    // === MATH - MEDIUM ===
     {
       id: 'm1',
       text: 'What is the square root of 144?',
@@ -88,7 +88,7 @@ export const QUESTIONS_BY_DIFFICULTY: Record<Difficulty, Question[]> = {
       timeLimit: 25,
       points: 200
     },
-    // Science
+    // === SCIENCE - MEDIUM ===
     {
       id: 'm3',
       text: 'Which element has the chemical symbol "Fe"?',
@@ -109,7 +109,7 @@ export const QUESTIONS_BY_DIFFICULTY: Record<Difficulty, Question[]> = {
       timeLimit: 25,
       points: 200
     },
-    // History
+    // === HISTORY - MEDIUM ===
     {
       id: 'm5',
       text: 'In which year did World War II end?',
@@ -132,7 +132,7 @@ export const QUESTIONS_BY_DIFFICULTY: Record<Difficulty, Question[]> = {
     }
   ],
   hard: [
-    // Math
+    // === MATH - HARD ===
     {
       id: 'h1',
       text: 'What is the value of π (pi) to 4 decimal places?',
@@ -153,7 +153,27 @@ export const QUESTIONS_BY_DIFFICULTY: Record<Difficulty, Question[]> = {
       timeLimit: 20,
       points: 300
     },
-    // Science
+    {
+      id: 'h7',
+      text: 'Solve for x: log₂(x) = 8',
+      category: 'Math',
+      difficulty: 'hard',
+      options: ['128', '256', '512', '1024'],
+      correctAnswer: 1,
+      timeLimit: 20,
+      points: 300
+    },
+    {
+      id: 'h8',
+      text: 'What is the derivative of ln(x²) with respect to x?',
+      category: 'Math',
+      difficulty: 'hard',
+      options: ['1/x', '2/x', '2x/x²', 'x²'],
+      correctAnswer: 1,
+      timeLimit: 20,
+      points: 300
+    },
+    // === SCIENCE - HARD ===
     {
       id: 'h3',
       text: 'Which particle has a negative charge?',
@@ -174,7 +194,48 @@ export const QUESTIONS_BY_DIFFICULTY: Record<Difficulty, Question[]> = {
       timeLimit: 20,
       points: 300
     },
-    // History & Literature
+    {
+      id: 'h9',
+      text: 'What is the half-life of Carbon-14?',
+      category: 'Science',
+      difficulty: 'hard',
+      options: ['4,730 years', '5,730 years', '6,730 years', '7,730 years'],
+      correctAnswer: 1,
+      timeLimit: 20,
+      points: 300
+    },
+    {
+      id: 'h10',
+      text: 'Which quantum number describes the shape of an orbital?',
+      category: 'Science',
+      difficulty: 'hard',
+      options: ['Principal', 'Angular momentum', 'Magnetic', 'Spin'],
+      correctAnswer: 1,
+      timeLimit: 20,
+      points: 300
+    },
+    // === GEOGRAPHY - HARD ===
+    {
+      id: 'h11',
+      text: 'Which country is located at the confluence of the Blue and White Nile?',
+      category: 'Geography',
+      difficulty: 'hard',
+      options: ['Egypt', 'Ethiopia', 'Sudan', 'South Sudan'],
+      correctAnswer: 2,
+      timeLimit: 20,
+      points: 300
+    },
+    {
+      id: 'h12',
+      text: 'What is the deepest point in the ocean?',
+      category: 'Geography',
+      difficulty: 'hard',
+      options: ['Mariana Trench', 'Tonga Trench', 'Philippine Trench', 'Puerto Rico Trench'],
+      correctAnswer: 0,
+      timeLimit: 20,
+      points: 300
+    },
+    // === HISTORY - HARD ===
     {
       id: 'h5',
       text: 'Who wrote "The Art of War"?',
@@ -192,6 +253,26 @@ export const QUESTIONS_BY_DIFFICULTY: Record<Difficulty, Question[]> = {
       difficulty: 'hard',
       options: ['2005', '2006', '2007', '2008'],
       correctAnswer: 2,
+      timeLimit: 20,
+      points: 300
+    },
+    {
+      id: 'h13',
+      text: 'Which ancient civilization built the city of Teotihuacan?',
+      category: 'History',
+      difficulty: 'hard',
+      options: ['Aztecs', 'Mayans', 'Olmecs', 'Unknown'],
+      correctAnswer: 3,
+      timeLimit: 20,
+      points: 300
+    },
+    {
+      id: 'h14',
+      text: 'In which year did the Byzantine Empire fall to the Ottoman Turks?',
+      category: 'History',
+      difficulty: 'hard',
+      options: ['1453', '1492', '1517', '1526'],
+      correctAnswer: 0,
       timeLimit: 20,
       points: 300
     }

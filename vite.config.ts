@@ -16,12 +16,25 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
       },
-      '/ws': {
+      '/game': {
         target: 'ws://localhost:3001',
-        ws: true
+        ws: true,
       }
     }
+  },
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          game: ['./src/components/game/']
+        }
+      }
+    }
+  },
+  optimizeDeps: {
+    include: ['underscore']
   }
 });

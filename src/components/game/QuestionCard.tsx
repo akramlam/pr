@@ -1,22 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Clock } from 'lucide-react';
 import type { Question } from '../../types';
+import _ from 'underscore';
 
 interface QuestionCardProps {
   question: Question;
-  onAnswer: (answerIndex: number) => void;
+  onAnswer: (index: number) => void;
   timeLimit: number;
   disabled?: boolean;
 }
 
-const QuestionCard: React.FC<QuestionCardProps> = ({ 
+const QuestionCard = memo(({ 
   question, 
   onAnswer, 
   timeLimit,
   disabled = false 
-}) => {
+}: QuestionCardProps) => {
   const { t } = useTranslation();
   const [timeLeft, setTimeLeft] = useState(timeLimit);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -136,6 +137,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       </div>
     </motion.div>
   );
-};
+}, (prevProps, nextProps) => {
+  return _.isEqual(prevProps.question, nextProps.question);
+});
 
 export default QuestionCard;

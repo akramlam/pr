@@ -37,7 +37,7 @@ const resources = {
       avgTime: 'Avg. Time',
       recentGames: 'Recent Games',
       game: 'Game',
-      streak: 'streak',
+      currentStreak: 'Current Streak',
       ready: 'Ready',
       notReady: 'Not Ready',
       startGame: 'Start Game',

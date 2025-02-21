@@ -1,129 +1,165 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from './useAuth';
+import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from './useToast';
-import { createGameService } from '../services/GameService';
-import type { GamePlayer, Question } from '../types';
+import { createGameService, GameService } from '../services/GameService';
+import { gameServiceManager } from '../services/GameServiceManager';
+import type { GameSession, GamePlayer } from '../types';
 
-interface UseMultiplayerGameProps {
-  sessionId?: string;
-}
-
-export const useMultiplayerGame = ({ sessionId }: UseMultiplayerGameProps) => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+export const useMultiplayerGame = (sessionId: string) => {
+  const { t } = useTranslation();
   const { addToast } = useToast();
-  const [players, setPlayers] = useState<GamePlayer[]>([]);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [isHost, setIsHost] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const [gameState, setGameState] = useState<'waiting' | 'playing' | 'finished'>('waiting');
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [streak, setStreak] = useState(0);
-
-  const handleGameStart = useCallback(() => {
-    if (!isHost || !sessionId) return;
-    const gameService = createGameService(sessionId);
-    gameService.startGame();
-  }, [isHost, sessionId]);
-
-  const handleReady = useCallback((ready: boolean) => {
-    if (!sessionId) return;
-    const gameService = createGameService(sessionId);
-    gameService.setReady(ready);
-    setIsReady(ready);
-  }, [sessionId]);
-
-  const handleAnswer = useCallback((answerIndex: number) => {
-    if (!sessionId) return;
-    const gameService = createGameService(sessionId);
-    gameService.submitAnswer(answerIndex);
-  }, [sessionId]);
+  const [session, setSession] = useState<GameSession | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [currentPlayer, setCurrentPlayer] = useState<GamePlayer | null>(null);
+  const mountedRef = useRef(false);
+  const gameServiceRef = useRef<GameService | null>(null);
+  const actualSessionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!user || !sessionId) return;
+    if (!sessionId || mountedRef.current) return;
 
-    const gameService = createGameService(sessionId);
-    const ws = gameService.connect();
+    mountedRef.current = true;
+    let isMounted = true;
 
-    ws.on('GAME_STATE', (data) => {
-      setPlayers(data.players);
-      const currentPlayer = data.players.find(p => p.id === user.id);
-      setIsHost(currentPlayer?.isHost || false);
-      setIsReady(currentPlayer?.isReady || false);
+    const handleConnect = () => {
+      if (!isMounted) return;
+      console.log('Connected to game session:', sessionId);
+      setIsConnected(true);
+    };
 
-      if (data.state === 'playing') {
-        setQuestions(data.questions);
-        setGameState('playing');
-      } else if (data.state === 'finished') {
-        setGameState('finished');
+    const handleDisconnect = () => {
+      if (!isMounted) return;
+      console.log('Disconnected from game session');
+      setIsConnected(false);
+    };
+
+    const handleError = (error: any) => {
+      if (!isMounted) return;
+      console.error('WebSocket error:', error);
+      addToast(t('connectionError'), 'error');
+    };
+
+    const handleConnected = (data: any) => {
+      if (!isMounted) return;
+      console.log('Player connected:', data);
+      if (data.playerId && !currentPlayer) {
+        const newPlayer = {
+          id: data.playerId,
+          isHost: sessionId === 'new',
+          ready: false,
+          score: 0,
+          name: `Player ${data.playerId.slice(0, 4)}`
+        };
+        setCurrentPlayer(newPlayer);
       }
-    });
+    };
 
-    ws.on('PLAYER_JOINED', (data) => {
-      setPlayers(data.players);
-      addToast(data.message, 'info');
-    });
+    const handleSessionUpdate = (data: any) => {
+      if (!isMounted) return;
+      console.log('Session update:', data);
+      if (data.session) {
+        setSession(data.session);
+        gameServiceManager.setSession(data.session.id, data.session);
+      }
+    };
 
-    ws.on('PLAYER_LEFT', (data) => {
-      setPlayers(data.players);
-      addToast(data.message, 'info');
-    });
+    const handleHostGameSuccess = (data: any) => {
+      if (!isMounted) return;
+      console.log('Host game success:', data);
+      if (data.session) {
+        setSession(data.session);
+        gameServiceManager.setSession(data.session.id, data.session);
+        actualSessionIdRef.current = data.sessionId;
+      }
+    };
 
-    ws.on('GAME_STARTED', (data) => {
-      setGameState('playing');
-      setQuestions(data.questions);
-      addToast('Game started!', 'success');
-    });
-
-    ws.on('ANSWER_RESULT', (data) => {
-      if (data.playerId === user.id) {
-        setScore(data.newScore);
-        setStreak(data.newStreak);
-        if (data.isCorrect) {
-          addToast(`Correct! +${data.points} points`, 'success');
-        } else {
-          addToast('Wrong answer!', 'error');
+    const setupGameService = () => {
+      // Try to reuse existing game service
+      const existingService = gameServiceManager.getService(sessionId);
+      if (existingService) {
+        console.log('Reusing existing game service for session:', sessionId);
+        gameServiceRef.current = existingService;
+      } else {
+        console.log('Creating new game service for session:', sessionId);
+        const gameService = createGameService(sessionId);
+        gameServiceRef.current = gameService;
+        if (sessionId !== 'new') {
+          gameServiceManager.setService(sessionId, gameService);
         }
       }
-    });
 
-    ws.on('NEXT_QUESTION', (data) => {
-      setCurrentQuestionIndex(data.questionIndex);
-    });
+      const gameService = gameServiceRef.current;
+      if (!gameService) return;
 
-    ws.on('GAME_OVER', (data) => {
-      setGameState('finished');
-      const winner = data.players.reduce((prev: GamePlayer, curr: GamePlayer) => 
-        prev.score > curr.score ? prev : curr
-      );
-      addToast(`Game Over! ${winner.name} wins with ${winner.score} points!`, 'info');
-    });
+      // Register event handlers
+      gameService.on('connected', handleConnect);
+      gameService.on('disconnected', handleDisconnect);
+      gameService.on('error', handleError);
+      gameService.on('CONNECTED', handleConnected);
+      gameService.on('SESSION_UPDATE', handleSessionUpdate);
+      gameService.on('HOST_GAME_SUCCESS', handleHostGameSuccess);
 
-    // Join the session
-    gameService.joinSession({
-      id: user.id,
-      name: user.name,
-      photoUrl: user.photoUrl,
-    });
-
-    return () => {
-      gameService.disconnect();
+      // Connect to the game session if not already connected
+      if (!gameService.isConnected) {
+        gameService.connect();
+      }
     };
-  }, [user, sessionId, addToast]);
+
+    // Only set up the game service if we're not in a transition
+    if (!gameServiceManager.isTransitioning(sessionId)) {
+      setupGameService();
+    }
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      mountedRef.current = false;
+      
+      if (gameServiceRef.current) {
+        const service = gameServiceRef.current;
+        service.off('connected', handleConnect);
+        service.off('disconnected', handleDisconnect);
+        service.off('error', handleError);
+        service.off('CONNECTED', handleConnected);
+        service.off('SESSION_UPDATE', handleSessionUpdate);
+        service.off('HOST_GAME_SUCCESS', handleHostGameSuccess);
+
+        // Only clean up if we're not transitioning to a new session
+        const isTransitioning = sessionId === 'new' && actualSessionIdRef.current;
+        if (!isTransitioning) {
+          console.log('Cleaning up game service for session:', sessionId);
+          if (sessionId !== actualSessionIdRef.current) {
+            gameServiceManager.cleanup(sessionId);
+            gameServiceRef.current = null;
+          }
+        } else {
+          console.log('Preserving game service for transition to:', actualSessionIdRef.current);
+        }
+      }
+    };
+  }, [sessionId, t, addToast, currentPlayer]);
+
+  const setReady = (ready: boolean) => {
+    if (!gameServiceRef.current) return;
+    gameServiceRef.current.setReady(ready);
+  };
+
+  const startGame = () => {
+    if (!gameServiceRef.current || !currentPlayer?.isHost) return;
+    gameServiceRef.current.startGame();
+  };
+
+  const submitAnswer = (answerIndex: number) => {
+    if (!gameServiceRef.current) return;
+    gameServiceRef.current.submitAnswer(answerIndex);
+  };
 
   return {
-    players,
-    questions,
-    isHost,
-    isReady,
-    gameState,
-    currentQuestionIndex,
-    score,
-    streak,
-    handleGameStart,
-    handleReady,
-    handleAnswer,
+    session,
+    isConnected,
+    currentPlayer,
+    setReady,
+    startGame,
+    submitAnswer
   };
 };

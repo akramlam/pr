@@ -1,2 +1,0 @@
-npm install express cors ws @types/ws @types/express @types/cors ts-node-dev --save-dev
-

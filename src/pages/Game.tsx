@@ -9,6 +9,7 @@ import ScoreMultiplier from '../components/game/ScoreMultiplier';
 import { useToast } from '../hooks/useToast';
 import { QUESTIONS_BY_DIFFICULTY } from '../data/questions';
 import type { Question, Difficulty } from '../types';
+import { Navigate, useParams } from 'react-router-dom';
 
 type GameState = 'selecting' | 'playing' | 'finished';
 
@@ -23,32 +24,24 @@ const Game: React.FC = () => {
   const [streak, setStreak] = useState(0);
   const [lastPoints, setLastPoints] = useState<{ points: number; isCorrect: boolean } | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [displayStreak, setDisplayStreak] = useState(0);
+  const { sessionId } = useParams();
 
+  // Single player game initialization
   useEffect(() => {
-    if (difficulty) {
+    if (!sessionId && difficulty) {
       const difficultyQuestions = [...QUESTIONS_BY_DIFFICULTY[difficulty]];
       for (let i = difficultyQuestions.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [difficultyQuestions[i], difficultyQuestions[j]] = [difficultyQuestions[j], difficultyQuestions[i]];
       }
       setQuestions(difficultyQuestions.slice(0, 10));
+      setGameState('playing');
+      addToast(t('starting Game', { difficulty }), 'info');
     }
-  }, [difficulty]);
+  }, [difficulty, addToast, t, sessionId]);
 
   const handleDifficultySelect = (selectedDifficulty: Difficulty) => {
     setDifficulty(selectedDifficulty);
-    setGameState('playing');
-    addToast(t('starting Game', { difficulty: selectedDifficulty }), 'info');
-  };
-
-  const calculatePoints = (isCorrect: boolean, currentStreak: number, basePoints: number) => {
-    if (!isCorrect) return 0;
-    
-    const streakMultiplier = Math.floor(currentStreak / 3);
-    const streakBonus = streakMultiplier > 0 ? streakMultiplier * 50 : 0;
-    
-    return basePoints + streakBonus;
   };
 
   const handleAnswer = async (answerIndex: number) => {
@@ -93,7 +86,6 @@ const Game: React.FC = () => {
       }
     } else {
       addToast(t('wrongAnswer'), 'error');
-      
       setStreak(0);
       setLastPoints({ points: 0, isCorrect: false });
     }
@@ -120,6 +112,11 @@ const Game: React.FC = () => {
     setQuestions([]);
     setIsTransitioning(false);
   };
+
+  // If this is a multiplayer game, redirect to multiplayer component
+  if (sessionId) {
+    return <Navigate to={`/multiplayer/${sessionId}`} />;
+  }
 
   return (
     <PageLayout>
@@ -164,7 +161,7 @@ const Game: React.FC = () => {
                 {t('question')} {currentQuestionIndex + 1}/{questions.length}
               </p>
               <p>
-                {t('score')}: {score} | {t('streak')}: {displayStreak}
+                {t('score')}: {score} | {t('streak')}: {streak}
               </p>
             </div>
           </motion.div>

@@ -1,6 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Crown, User, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
 import type { GamePlayer } from '../../types';
 
 interface PlayerListProps {
@@ -9,48 +8,49 @@ interface PlayerListProps {
 }
 
 const PlayerList: React.FC<PlayerListProps> = ({ players, currentPlayerId }) => {
-  // Sort players by score
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-
   return (
-    <div className="fixed right-4 top-24 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Players</h3>
-      <div className="space-y-2">
-        <AnimatePresence mode="popLayout">
-          {sortedPlayers.map((player, index) => (
-            <motion.div
-              key={player.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className={`flex items-center justify-between p-3 rounded-lg
-                ${player.id === currentPlayerId ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}
-                ${player.isReady ? 'border-l-4 border-green-500' : ''}`}
-            >
-              <div className="flex items-center gap-2">
-                {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
-                {player.isHost && <User className="w-4 h-4 text-indigo-500" />}
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {player.name}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                  {player.score}
-                </span>
-                {player.streak >= 3 && (
-                  <div className="relative">
-                    <Zap className="w-4 h-4 text-orange-500" />
-                    <span className="absolute -top-1 -right-1 text-xs font-bold">
-                      {Math.floor(player.streak / 3)}
-                    </span>
-                  </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      {players.map((player) => (
+        <motion.div
+          key={player.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className={`p-4 rounded-xl border-2 ${
+            player.id === currentPlayerId
+              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            {player.photoUrl && (
+              <img
+                src={player.photoUrl}
+                alt={player.name}
+                className="w-8 h-8 rounded-full"
+              />
+            )}
+            <div>
+              <p className="font-medium">
+                {player.name}
+                {player.isHost && (
+                  <span className="ml-2 text-xs text-indigo-600 dark:text-indigo-400">
+                    (Host)
+                  </span>
                 )}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Score: {player.score}
+              </p>
+            </div>
+            {player.isReady && (
+              <span className="ml-auto text-green-600 dark:text-green-400 text-sm">
+                Ready
+              </span>
+            )}
+          </div>
+        </motion.div>
+      ))}
     </div>
   );
 };

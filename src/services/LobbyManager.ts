@@ -16,8 +16,8 @@ export class LobbyManager {
       currentQuestion: 0,
       questionCount: 5,
       timeLimit,
-      startTime: null,
-      endTime: null
+      startTime: undefined,
+      endTime: undefined
     };
 
     this.lobbies.set(id, lobby);
