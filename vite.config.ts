@@ -20,6 +20,13 @@ export default defineConfig({
       '/game': {
         target: 'ws://localhost:3001',
         ws: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        ws: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/socket.io/, '')
       }
     }
   },

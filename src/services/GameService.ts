@@ -144,6 +144,35 @@ export class GameService extends EventEmitter {
   submitAnswer(answerIndex: number) {
     this.send('SUBMIT_ANSWER', { answer: answerIndex });
   }
+
+  updateSessionId(newSessionId: string) {
+    this.sessionId = newSessionId;
+    this.socket?.emit('SESSION_TRANSFER', { newSessionId });
+  }
+
+  public cloneConnection(): GameService | null {
+    if (!this.socket) return null;
+    
+    const newService = new GameService(this.sessionId, this.url);
+    newService.socket = this.socket;
+    newService.socket.onAny((...args) => this.emit(...args));
+    
+    return newService;
+  }
+
+  public transferConnection(newSessionId: string) {
+    if (!this.socket) return;
+    
+    // Preserve existing connection
+    this.socket.io.opts.autoUnref = false;
+    this.socket.io.engine.transport.once("close", () => {
+      this.socket?.connect(); // Force reconnect if closed
+    });
+    
+    // Update session ID
+    this.sessionId = newSessionId;
+    this.socket.emit('SESSION_TRANSFER', { newSessionId });
+  }
 }
 
 export const createGameService = (sessionId: string) => {

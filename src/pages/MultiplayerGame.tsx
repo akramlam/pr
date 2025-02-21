@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageLayout from '../components/PageLayout';
@@ -8,10 +8,12 @@ import PlayerList from '../components/game/PlayerList';
 import ReadyButton from '../components/game/ReadyButton';
 import { useMultiplayerGame } from '../hooks/useMultiplayerGame';
 import { useToast } from '../hooks/useToast';
+import { Socket } from 'socket.io-client';
 
 const MultiplayerGame: React.FC = () => {
   const { t } = useTranslation();
   const { sessionId } = useParams();
+  const location = useLocation();
   const { addToast } = useToast();
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -23,6 +25,20 @@ const MultiplayerGame: React.FC = () => {
     startGame,
     submitAnswer
   } = useMultiplayerGame(sessionId || '');
+
+  const socket = (location.state as { socket: Socket })?.socket;
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('SESSION_UPDATE', (session) => {
+      console.log('Session update:', session);
+    });
+
+    return () => {
+      socket.off('SESSION_UPDATE');
+    };
+  }, [socket]);
 
   const handleAnswer = async (answerIndex: number) => {
     if (isTransitioning) return;

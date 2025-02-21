@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { PlayerProvider } from './contexts/PlayerContext';
+import MultiplayerGame from './pages/MultiplayerGame';
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -49,8 +50,8 @@ export const router = createBrowserRouter(
           element: withSuspense(MultiplayerLobby),
         },
         {
-          path: 'multiplayer/:sessionId',
-          element: withSuspense(MultiplayerLobby),
+          path: 'game/:sessionId',
+          element: <MultiplayerGame />
         },
         {
           path: 'stats',
