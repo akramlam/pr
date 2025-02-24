@@ -4,6 +4,7 @@ import { useMultiplayerGame } from '../hooks/useMultiplayerGame';
 import { GameLobby } from './GameLobby';
 import { useGameServiceManager } from '../hooks/useGameServiceManager';
 import { io, Socket } from 'socket.io-client';
+import { useAuth } from './AuthProvider';
 
 interface MultiplayerLobbyProps {
   sessionId: string;
@@ -14,6 +15,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ sessionId })
   const { session, currentPlayer, isConnected, setReady, startGame } = useMultiplayerGame(sessionId);
   const gameServiceManager = useGameServiceManager();
   const socketRef = React.useRef<Socket | null>(null);
+  const { user } = useAuth();
 
   const handleStart = useCallback(() => {
     startGame();
@@ -24,15 +26,24 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ sessionId })
   }, [setReady]);
 
   const handleHostGame = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
     const socket = io({
       transports: ['websocket'],
-      reconnection: false
+      auth: { token: user.token },
+      extraHeaders: {
+        Authorization: `Bearer ${user.token}`
+      }
     });
 
     socket.on('connect', () => {
-      console.log('BASE CONNECTION ESTABLISHED');
       socket.emit('HOST_GAME', (response) => {
-        console.log('RAW RESPONSE:', response);
+        navigate(`/game/${response.sessionId}`, {
+          state: { socket }
+        });
       });
     });
 

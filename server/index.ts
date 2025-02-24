@@ -4,6 +4,7 @@ import { Server, Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import cors from 'cors';
 import type { GameSession, GamePlayer } from '../src/types';
+import jwt from 'jsonwebtoken';
 
 interface ServerToClientEvents {
   CONNECTED: (data: { playerId: string }) => void;
@@ -82,13 +83,34 @@ function cleanupPlayerConnections(playerId: string) {
   }
 }
 
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) return next(new Error('Authentication error'));
+  
+  // Verify JWT token
+  jwt.verify(token, process.env.JWT_SECRET!, (err: any, decoded: any) => {
+    if (err) return next(new Error('Authentication failed'));
+    (socket as any).user = decoded;
+    next();
+  });
+});
+
 io.on('connection', (socket) => {
-  console.log('Client connected');
-  socket.emit('TEST_EVENT', { status: 'connected' });
+  console.log('Authenticated user connected:', (socket as any).user.id);
   
   socket.on('HOST_GAME', (callback) => {
-    console.log('Received HOST_GAME');
-    callback({ sessionId: 'test-session-123' });
+    const sessionId = uuidv4();
+    const session = {
+      id: sessionId,
+      hostId: (socket as any).user.id,
+      players: [{
+        id: (socket as any).user.id,
+        name: (socket as any).user.name
+      }]
+    };
+    
+    state.sessions.set(sessionId, session);
+    callback({ sessionId, session });
   });
 
   socket.on('disconnect', () => {

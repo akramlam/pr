@@ -77,7 +77,7 @@ const Profile: React.FC = () => {
                     onClick={() => setIsEditing(true)}
                     className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
                   >
-                    {t('common.edit')}
+                    {t('game.edit')}
                   </button>
                 </div>
               )}

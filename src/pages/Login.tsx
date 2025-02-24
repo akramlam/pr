@@ -4,6 +4,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+
+const formSchema = z.object({
+  email: z.string().email().optional(),
+  password: z.string().min(8).max(32),
+  rememberMe: z.boolean().optional(),
+  username: z.string().min(3).max(32),
+});
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
